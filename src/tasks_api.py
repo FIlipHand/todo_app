@@ -22,67 +22,101 @@ def create_task(title: str, description: str, priority: int, status: str = None)
             session.refresh(new_task)
             new_id = new_task.id
     except SQLAlchemyError as e:
-        error = str(e)
+        error = e
     finally:
         return new_id, error
+
 
 def create_subtask(task_parent_id: int, title: str, description: str, priority: int, status: str = None):
     if status is None:
         status = "To Do"
-    with SessionLocal() as session:
-        parent_task = session.query(Task).filter(Task.id == task_parent_id).first()
-        if parent_task is None:
-            print("No such parent task!")
-            return
-        if parent_task.close_date is not None:
-            print("Cannot add subtask to closed task!")
-            return
-        sub_task = Task(
-            title=title,
-            description=description,
-            priority=priority,
-            status=status,
-            start_date=datetime.now(),
-            parent_task_id=task_parent_id,
-        )
-        session.add(sub_task)
-        session.commit()
+    new_id, error = None, None
+    try:
+        with SessionLocal() as session:
+            parent_task = session.query(Task).filter(Task.id == task_parent_id).first()
+            if parent_task is None:
+                print("No such parent task!")
+                return Exception()
+            if parent_task.close_date is not None:
+                print("Cannot add subtask to closed task!")
+                return Exception()
+            sub_task = Task(
+                title=title,
+                description=description,
+                priority=priority,
+                status=status,
+                start_date=datetime.now(),
+                parent_task_id=task_parent_id,
+            )
+            session.add(sub_task)
+            session.commit()
+            session.refresh(sub_task)
+            new_id = sub_task.id
+    except SQLAlchemyError as e:
+        error = e
+    finally:
+        return new_id, error
 
 
 def close_task(task_id: int):
-    with SessionLocal() as session:
-        task = session.query(Task).filter(Task.id == task_id).first()
-        if not task:
-            print(f"No task with id {task_id}")
-            return
-        task.close_date = datetime.now()
-        session.commit()
+    closed_id, error = None, None
+    try:
+        with SessionLocal() as session:
+            task = session.query(Task).filter(Task.id == task_id).first()
+            if not task:
+                print(f"No task with id {task_id}")
+                return Exception()
+            task.close_date = datetime.now()
+            session.commit()
+            closed_id = task.id
+    except SQLAlchemyError as e:
+        error = e
+    finally:
+        return closed_id, error
 
 
 def update_status(task_id: int, new_status: str):
-    with SessionLocal() as session:
-        task = session.query(Task).filter(Task.id == task_id).first()
-        if task.close_date is not None:
-            print("Cannot modify closed task!")
-            return
-        task.status = new_status
-        session.commit()
+    updated_id, error = None, None
+    try:
+        with SessionLocal() as session:
+            task = session.query(Task).filter(Task.id == task_id).first()
+            if task.close_date is not None:
+                print("Cannot modify closed task!")
+                return None, Exception()
+            task.status = new_status
+            session.commit()
+            updated_id = task.id
+    except SQLAlchemyError as e:
+        error = e
+    finally:
+        return updated_id, error
 
 
 def update_priority(task_id: int, new_priority: int):
-    with SessionLocal() as session:
-        task = session.query(Task).filter(Task.id == task_id).first()
-        if task.close_date is not None:
-            print("Cannot modify closed task!")
-            return
-        task.priority = new_priority
-        session.commit()
+    updated_id, error = None, None
+    try:
+        with SessionLocal() as session:
+            task = session.query(Task).filter(Task.id == task_id).first()
+            if task.close_date is not None:
+                print("Cannot modify closed task!")
+                return None, Exception()
+            task.priority = new_priority
+            session.commit()
+            updated_id = task.id
+    except SQLAlchemyError as e:
+        error = e
+    finally:
+        return updated_id, error
 
 
 def get_task(task_id: int) -> Task:
-    with SessionLocal() as session:
-        task = session.query(Task).filter(Task.id == task_id).first()
-    return task
+    task, error = None, None
+    try:
+        with SessionLocal() as session:
+            task = session.query(Task).filter(Task.id == task_id).first()
+    except SQLAlchemyError as e:
+        error = e
+    return task, error
 
 
 def get_all_tasks() -> List[Task]:
