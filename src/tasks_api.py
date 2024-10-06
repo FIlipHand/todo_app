@@ -1,23 +1,30 @@
 from typing import List
 from src.database import SessionLocal, Task
 from datetime import datetime
+from sqlalchemy.exc import SQLAlchemyError
 
 
-def create_task(title: str, description: str, priority: int, status: str = None) -> int:
+def create_task(title: str, description: str, priority: int, status: str = None):
+    error, new_id = None, None
     if status is None:
         status = "To Do"
-    with SessionLocal() as session:
-        new_task = Task(
-            title=title,
-            description=description,
-            priority=priority,
-            status=status,
-            start_date=datetime.now(),
-        )
-        session.add(new_task)
-        session.commit()
-        return new_task.id
-
+    try:
+        with SessionLocal() as session:
+            new_task = Task(
+                title=title,
+                description=description,
+                priority=priority,
+                status=status,
+                start_date=datetime.now(),
+            )
+            session.add(new_task)
+            session.commit()
+            session.refresh(new_task)
+            new_id = new_task.id
+    except SQLAlchemyError as e:
+        error = str(e)
+    finally:
+        return new_id, error
 
 def create_subtask(task_parent_id: int, title: str, description: str, priority: int, status: str = None):
     if status is None:
@@ -79,6 +86,11 @@ def get_task(task_id: int) -> Task:
 
 
 def get_all_tasks() -> List[Task]:
-    with SessionLocal() as session:
-        tasks = session.query(Task).all()
-        return tasks
+    tasks, error = None, None
+    try:
+        with SessionLocal() as session:
+            tasks = session.query(Task).all()
+    except SQLAlchemyError as e:
+        error = e
+    finally:
+        return tasks, error
