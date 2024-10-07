@@ -35,11 +35,9 @@ def create_subtask(task_parent_id: int, title: str, description: str, priority: 
         with SessionLocal() as session:
             parent_task = session.query(Task).filter(Task.id == task_parent_id).first()
             if parent_task is None:
-                print("No such parent task!")
-                return Exception()
+                return Exception("No such parent task!")
             if parent_task.close_date is not None:
-                print("Cannot add subtask to closed task!")
-                return Exception()
+                return Exception("Cannot add subtask to closed task!")
             sub_task = Task(
                 title=title,
                 description=description,
@@ -64,8 +62,7 @@ def close_task(task_id: int):
         with SessionLocal() as session:
             task = session.query(Task).filter(Task.id == task_id).first()
             if not task:
-                print(f"No task with id {task_id}")
-                return Exception()
+                return Exception(f"No task with id {task_id}")
             task.close_date = datetime.now()
             session.commit()
             closed_id = task.id
@@ -81,8 +78,7 @@ def update_status(task_id: int, new_status: str):
         with SessionLocal() as session:
             task = session.query(Task).filter(Task.id == task_id).first()
             if task.close_date is not None:
-                print("Cannot modify closed task!")
-                return None, Exception()
+                return None, Exception("Cannot modify closed task!")
             task.status = new_status
             session.commit()
             updated_id = task.id
@@ -98,8 +94,7 @@ def update_priority(task_id: int, new_priority: int):
         with SessionLocal() as session:
             task = session.query(Task).filter(Task.id == task_id).first()
             if task.close_date is not None:
-                print("Cannot modify closed task!")
-                return None, Exception()
+                return None, Exception("Cannot modify closed task!")
             task.priority = new_priority
             session.commit()
             updated_id = task.id

@@ -35,7 +35,11 @@ class FullTask(TaskBase):
     close_date: Optional[datetime]
 
 
-@app.post("/tasks/", response_model=TaskResponse)
+class TaskId(BaseModel):
+    id: int
+
+
+@app.post("/tasks/create_task", response_model=TaskResponse)
 def app_create_task(task: TaskBase):
     new_task_id, error = create_task(task.title, task.description, task.priority, task.status)
     if error is not None:
@@ -43,9 +47,25 @@ def app_create_task(task: TaskBase):
     return {"id": new_task_id, "title": task.title}
 
 
-@app.get("/tasks/", response_model=List[FullTask])
+@app.get("/tasks/get_all_tasks", response_model=List[FullTask])
 def app_get_all_tasks():
     tasks, error = get_all_tasks()
     if error is not None:
         raise HTTPException(status_code=400, detail=str(error))
     return tasks
+
+
+@app.get("/tasks/close_task", response_model=TaskId)
+def app_close_task(task: TaskId):
+    task_id, error = close_task(task_id=task.id)
+    if error is not None:
+        raise HTTPException(status_code=400, detail=str(error))
+    return task_id
+
+
+@app.get("/tasks/create_subtask")
+def app_create_subtask():
+    subtask_id, error = create_subtask()
+    if error is not None:
+        raise HTTPException(status_code=400, detail=str(error))
+    return subtask_id
